@@ -21,8 +21,9 @@ func NewSessionManager(config SessionManagerConfig) SessionManager {
 	sessionManager := &sessionManager{
 		sessionName: DefaultSessionName,
 		sidCreator:  &UUIDCreator{},
-		encoder: &PHPSessionEncoder{},
-		config:  config,
+		encoder:     &PHPSessionEncoder{},
+		config:      config,
+		handiler:    NewSessionHandler(),
 	}
 	return sessionManager
 }
@@ -32,6 +33,7 @@ func NewSessionManagerRaw(
 	sidCreator SessionIDCreator,
 	encoder SessionEncoder,
 	config SessionManagerConfig,
+	handiler SessionHandlerInterface,
 ) SessionManager {
 
 	return &sessionManager{
@@ -39,6 +41,7 @@ func NewSessionManagerRaw(
 		sidCreator:  sidCreator,
 		encoder:     encoder,
 		config:      config,
+		handiler:    handiler,
 	}
 }
 
@@ -48,6 +51,7 @@ type sessionManager struct {
 	sidCreator  SessionIDCreator
 	encoder     SessionEncoder
 	config      SessionManagerConfig
+	handiler    SessionHandlerInterface
 }
 
 // Start is adoption of PHP start_session() to return current active session
@@ -75,7 +79,7 @@ func (m *sessionManager) Start(w http.ResponseWriter, r *http.Request) (session 
 	}
 
 	session.SessionID = sessionID
-	raw, err = Read(sessionID)
+	raw, err = m.handiler.Read(sessionID)
 	if err != nil {
 		return
 	}
@@ -96,7 +100,7 @@ func (m *sessionManager) Save(session *Session) error {
 		return err
 	}
 
-	return Write(session.SessionID, sessionData)
+	return m.handiler.Write(session.SessionID, sessionData)
 }
 
 func (m *sessionManager) SessionName() string {

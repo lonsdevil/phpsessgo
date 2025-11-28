@@ -2,20 +2,27 @@ package phpsessgo
 
 // SessionHandler is adoption of PHP SessionHandlerInterface
 // For more reference: https://www.php.net/manual/en/class.sessionhandlerinterface.php
-var database map[string]string
 
-func init() {
-	database = make(map[string]string)
+type SessionHandler struct {
+	database map[string]string
+}
+type SessionHandlerInterface interface {
+	Read(sessionID string) (string, error)
+	Write(sessionID string, sessionData string) error
 }
 
-func Read(sessionID string) (data string, err error) {
-	if value, ok := database[sessionID]; ok {
+func NewSessionHandler() SessionHandlerInterface {
+	return &SessionHandler{make(map[string]string)}
+}
+
+func (h *SessionHandler) Read(sessionID string) (data string, err error) {
+	if value, ok := h.database[sessionID]; ok {
 		return value, nil
 	}
 	return "", nil
 }
 
-func Write(sessionID string, sessionData string) error {
-	database[sessionID] = sessionData
+func (h *SessionHandler) Write(sessionID string, sessionData string) error {
+	h.database[sessionID] = sessionData
 	return nil
 }
